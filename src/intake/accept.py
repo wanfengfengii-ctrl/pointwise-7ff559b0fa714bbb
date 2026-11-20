@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from .identity import same_event_content
 from .normalize import normalize_event
 from .raw_store import RawEntry, find_raw_event, store_raw_events
+from .sources import ensure_sources
 from .validation import IntakeError
 
 
@@ -33,4 +34,5 @@ def accept_batch(db, events, version):
         else:
             raise IntakeError(f'event identity already has different content: {event.identity.key}')
     store_raw_events(db, added)
+    ensure_sources(db, (entry.raw.identity.source for entry in added))
     return Acceptance(tuple(added), tuple(repeated))

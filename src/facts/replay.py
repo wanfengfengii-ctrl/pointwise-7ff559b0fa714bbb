@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from .apply import materialize_facts
-from .order import ReplayOrderError, order_effective_events
+from .order import ReplayOrderError, order_effective_events, order_participants
 from .snapshot import FactSnapshot
 
 
@@ -22,6 +22,22 @@ def replay_events(revisions, version, *, expected_keys=None, changed_keys=None):
     facts, effects = materialize_facts(ordered)
     entities = {item.identity.entity for item in ordered if item.identity.key in changed}
     return ReplayResult(FactSnapshot(version, keys, facts, effects), tuple(sorted(entities)))
+
+
+def replay_participants(revisions, version, *, expected_keys):
+    """Replay only the participating revisions of a version.
+
+    Every participant must appear; the resulting snapshot membership is the
+    participant set, and ``effects`` holds one entry per participant with its
+    replay ordinal.  Paused events get no effect and are recorded separately
+    by the source view.
+    """
+    ordered = order_participants(revisions)
+    keys = tuple(item.identity.key for item in ordered)
+    if set(keys) != set(expected_keys) or len(keys) != len(set(keys)):
+        raise ReplayOrderError('participating events do not cover the required manifest')
+    facts, effects = materialize_facts(ordered)
+    return FactSnapshot(version, keys, facts, effects)
 
 
 def compare_snapshot_facts(expected, rebuilt):

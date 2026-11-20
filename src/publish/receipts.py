@@ -64,7 +64,8 @@ def resolve_result_receipt(db, result_id):
     if row is None:
         raise LookupError(f'unknown result {result_id!r}')
     receipt = find_request_receipt(db, row[1])
-    if receipt is None or (receipt.kind, receipt.result_id, receipt.version) != ('batch', result_id, row[0]):
+    if receipt is None or (receipt.kind not in ('batch', 'source_status')
+                           or receipt.result_id != result_id or receipt.version != row[0]):
         raise ValueError(f'inconsistent receipt for result {result_id!r}')
     return receipt
 

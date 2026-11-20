@@ -2,8 +2,11 @@ import sqlite3
 from contextlib import contextmanager
 
 from src.aggregate.daily import initialize_daily_store
+from src.facts.ledger import initialize_received
 from src.facts.snapshot import initialize_snapshots
+from src.facts.views import initialize_views
 from src.intake.raw_store import initialize_raw_store
+from src.intake.sources import adopt_accepted_sources, initialize_source_status
 from src.partitions.catalog import initialize_catalog
 from src.partitions.layout import initialize_segments
 
@@ -31,6 +34,10 @@ def initialize_database(db):
         initialize_daily_store(db)
         initialize_attempts(db)
         initialize_receipts(db)
+        initialize_source_status(db)
+        initialize_received(db)
+        initialize_views(db)
+        adopt_accepted_sources(db)
 
 
 @contextmanager

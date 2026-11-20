@@ -1,6 +1,7 @@
 import json
 from dataclasses import dataclass
 
+from .identity import EventIdentity
 from .normalize import FieldRevision, encode_field_revision, normalize_event, restore_field_revision
 from .validation import IntakeError, RawEvent, validate_raw_event
 
@@ -54,3 +55,11 @@ def load_raw_events(db, keys=None):
             raise IntakeError(f'missing original event {key}')
         entries.append(_restore(row))
     return tuple(entries)
+
+
+def accepted_sources(db):
+    """Sources of every accepted original, read without trusting the parameter."""
+    sources = set()
+    for (key,) in db.execute('SELECT event_key FROM raw_events ORDER BY event_key'):
+        sources.add(EventIdentity.from_key(key).source)
+    return frozenset(sources)

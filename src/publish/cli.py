@@ -11,9 +11,9 @@ from src.partitions.catalog import load_catalog
 from src.query.current import query_current
 from src.query.history import query_history
 
-from .coordinator import publish_batch, publish_compaction
+from .coordinator import publish_batch, publish_compaction, publish_source_status
 from .database import initialize_database, open_database, read_transaction
-from .receipts import find_request_receipt
+from .receipts import find_request_receipt, load_current_result
 from .rollback import recover_incomplete_attempts
 
 
@@ -76,7 +76,7 @@ def _demo(path):
 def _parser():
     parser = argparse.ArgumentParser(description='Experimental weighing ledger')
     commands = parser.add_subparsers(dest='command', required=True)
-    for name in ('init', 'catalog', 'current', 'history', 'receipt', 'submit', 'compact'):
+    for name in ('init', 'catalog', 'current', 'history', 'receipt', 'submit', 'compact', 'source'):
         commands.add_parser(name).add_argument('db')
     commands.choices['history'].add_argument('result_id')
     for name in ('current', 'history'):
@@ -84,13 +84,16 @@ def _parser():
         command.add_argument('--start')
         command.add_argument('--end')
         command.add_argument('--entity', action='append', dest='entities')
-    for name in ('receipt', 'submit', 'compact'):
+    for name in ('receipt', 'submit', 'compact', 'source'):
         commands.choices[name].add_argument('request_id')
     commands.choices['submit'].add_argument('batch')
     compact = commands.choices['compact']
     compact.add_argument('start')
     compact.add_argument('end')
     compact.add_argument('source_version', type=int)
+    source = commands.choices['source']
+    source.add_argument('source')
+    source.add_argument('state', choices=('enable', 'disable'))
     commands.add_parser('demo').add_argument('sample')
     return parser
 
@@ -113,6 +116,8 @@ def _dispatch(db, args):
         return publish_batch(db, args.request_id, _load(args.batch))
     if args.command == 'compact':
         return publish_compaction(db, args.request_id, args.start, args.end, args.source_version)
+    if args.command == 'source':
+        return publish_source_status(db, args.request_id, args.source, args.state == 'enable')
     scope = dict(start=args.start, end=args.end, entities=args.entities)
     if args.command == 'history':
         return query_history(db, args.result_id, **scope)

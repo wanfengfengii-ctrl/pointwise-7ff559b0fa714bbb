@@ -19,7 +19,7 @@ python3 -B -m src.publish.cli catalog lake.sqlite
 python3 -B -m src.publish.cli current lake.sqlite
 ```
 
-`submit DB REQUEST BATCH.json` 接受一个事件数组文件。`compact DB REQUEST START END SOURCE_VERSION` 压实闭区间内的所有在役段。`catalog DB` 返回可用于压实的全库目录版本和活动段。`receipt DB REQUEST` 领取成功回执。`history DB RESULT` 领取指定成果。`current` 和 `history` 支持 `--start`、`--end` 及可重复的 `--entity`。成果为空时 `current` 输出 JSON null。未知成果、无成功回执、非法输入和存储失败向标准错误输出原因并以状态 1 退出。
+`submit DB REQUEST BATCH.json` 接受一个事件数组文件。`compact DB REQUEST START END SOURCE_VERSION` 压实闭区间内的所有在役段。`source DB REQUEST SOURCE enable|disable` 切换已接纳来源的计量资格。`catalog DB` 返回可用于压实的全库目录版本和活动段。`receipt DB REQUEST` 领取成功回执。`history DB RESULT` 领取指定成果。`current` 和 `history` 支持 `--start`、`--end` 及可重复的 `--entity`。成果为空时 `current` 输出 JSON null。未知成果、无成功回执、非法输入和存储失败向标准错误输出原因并以状态 1 退出。
 
 ## 输入和计量
 
@@ -40,3 +40,14 @@ python3 -B -m src.publish.cli current lake.sqlite
 `open_database` 和 `initialize_database` 位于 `src.publish.database`。调用者持有连接并在使用完毕后关闭。初始化可重复，保留已发布数据。`src.publish.coordinator.publish_batch(db, request_id, records)` 和 `publish_compaction(db, request_id, start, end, source_version)` 返回 `PublishReceipt`。应用入口管理自己的事务，应在连接没有外层事务时调用。`find_request_receipt` 可重取回执。对于纯重投，回执引用已存在的成果或列出多个原成果的逐事件回执。压实回执记录替换段及新目录版本，复用现行逻辑成果。读回或提交失败时目录、事实和日账维持上次成功状态。有效参数一经绑定，同号仅可按原参数重试。尝试诊断和成功回执分别保存。
 
 `src.query.current.query_current` 和 `src.query.history.query_history` 支持可选 `start`、`end`、`entities`。查询在固定读事务内核对事实、事件及其生效证据、贡献和日报。日期及实体范围同时应用于当前状态、贡献和本次合计。返回范围内的原件及其出处，跨范围的前置事件仍会在全版核对中验证。返回的出处段号为事件第一次入账的原始段。物理替换后该出处号仍可读。基础回归覆盖三态、精确合计及日期移动、迟到和顺序冲突、重投、提交失败、压实损坏读回、历史固定成果及重开。
+
+## 来源停用与恢复
+
+供 `src.publish.coordinator.publish_source_status(db, request_id, source, enabled)` 切换已接纳来源。完整口径见 `SOURCE_STATUS.md`；简单说，暂停不撤销接纳，停用沿显式前置传递，补送照常首收，恢复按原件重放。
+
+```sh
+python3 -B -m examples.source_status_baseline
+python3 -B -m examples.source_status_demo
+```
+
+第一条核对样例在 V1 全启用时的录入、首执、非法输入拒收及压实；第二条演示停用首收、压实重开和分次恢复，并打印一条 `POINTWISE_SCENARIO` 摘要。
