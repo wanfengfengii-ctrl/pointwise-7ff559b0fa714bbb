@@ -1,0 +1,13 @@
+{
+  "day": "2026-04-12",
+  "initial": [
+    {"event_id":"a","entity":"E","field":"A","source":"P","seq":1,"day":"2026-04-12","payload":"{\"A\":12}"},
+    {"event_id":"b","entity":"E","field":"B","source":"Q","seq":1,"day":"2026-04-12","payload":"{\"B\":5}"},
+    {"event_id":"c","entity":"E","field":"C","source":"R","seq":1,"day":"2026-04-12","payload":"{\"C\":7}","requires":[["a","E","A","P"],["b","E","B","Q"]]},
+    {"event_id":"d","entity":"E","field":"D","source":"R","seq":1,"day":"2026-04-12","payload":"{\"D\":2}","requires":[["c","E","C","R"]]}
+  ],
+  "late": {"event_id":"late-a","entity":"E","field":"A","source":"P","seq":2,"day":"2026-04-12","payload":"{\"A\":13}"},
+  "sequence_only": {"event_id":"manual-a","entity":"E","field":"A","source":"Q","seq":3,"day":"2026-04-12","payload":"{\"A\":3}"},
+  "conflict": {"event_id":"duplicate-a","entity":"E","field":"A","source":"Q","seq":1,"day":"2026-04-12","payload":"{\"A\":91}"},
+  "missing": {"event_id":"missing-ref","entity":"E","field":"X","source":"P","seq":1,"day":"2026-04-12","payload":"{\"X\":1}","requires":[["unknown","E","Z","Q"]]}
+}
